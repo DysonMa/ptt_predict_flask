@@ -1,0 +1,65 @@
+/* .p{
+    padding:24px;
+} */
+
+body{
+    height: 100vh;
+    background-color: rgba(0,0,0,0.05);
+}
+
+
+
+.container{
+    position: relative;
+    padding:10px;
+    height: 100vh;
+    width: 100vw;
+}
+
+.container h1{
+    text-align: left;
+    padding: 12px 12px 12px 0;
+    font-weight: bold;
+    /* color: rgba(0,0,0,0.5);
+    text-shadow: 6px 6px 5px #000000; */
+}
+
+.form-group{
+    padding: 12px 12px 12px 0;
+    width: 20%;
+}
+
+@media (min-width: 1200px){
+    .container, .container-lg, .container-md, .container-sm, .container-xl {
+        max-width: 1600px;
+    }
+}
+
+
+table {
+    border: 1px solid black;
+    table-layout: fixed;
+    background-color: #FCFCFC;
+    /* vertical-align:middle; */
+    /* text-align: center; */
+    width: 100%;
+}
+
+.table td, .table th{
+    vertical-align:middle;
+    /* 自動換行 */
+    word-break: break-all; 
+    
+}
+
+
+
+
+/* .table .thead-dark th{
+    vertical-align:middle;
+} */
+
+/* thead th{ */
+    /* table-layout: fixed; */
+    /* text-align: center; */
+/* } */
