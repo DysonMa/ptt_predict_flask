@@ -2,7 +2,7 @@
 from flask import Flask
 from flask import request, render_template, url_for, redirect, flash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-
+from flask_paginate import Pagination, get_page_parameter, get_page_args
 
 
 
@@ -13,7 +13,7 @@ import sqlite3 as DB
 sqlite_path = 'ptt.db'
 
 
-def queryData(sqlite_path,webName):
+def queryData(sqlite_path, webName):
     [conndb,curr] = get_DB(sqlite_path)
     try:
         results = curr.execute("SELECT * FROM {} ORDER BY Date DESC;".format(webName))
@@ -37,6 +37,27 @@ def get_DB(DB_path):
     conndb = DB.connect(DB_path) # 若有則讀取，沒有則建立
     curr = conndb.cursor()  
     return [conndb,curr]
+
+#抓取部分資料
+def fetch_data(datas, offset=0, per_page=10):
+    return datas[offset: offset + per_page]
+
+#創造分頁
+def make_pagination():
+
+    page, per_page, offset = get_page_args(page_parameter='page', per_page_parameter='per_page')
+    # per_page = PER_PAGE
+    # offset = PER_PAGE
+    
+    print(page, per_page, offset)
+
+    # 用fetch_data這個函式來抓取分段的資料
+    page_datas = fetch_data(datas, offset=offset, per_page=per_page)
+    
+    # 設定分頁
+    pagination = Pagination(page=page, per_page=per_page, total=len(datas), css_framework='bootstrap4', record_name='review')
+
+    return page_datas, pagination
 
 # 設定密碼
 import os
@@ -69,7 +90,6 @@ class User(UserMixin):
 def user_loader(loginUser):
     if loginUser not in users:
         return
-
     user = User()
     user.id = loginUser
     return user
@@ -80,32 +100,67 @@ def request_loader(request):
     loginUser = request.form.get('user_id')
     if loginUser not in users:
         return
-
     user = User()
     user.id = loginUser
-
-    # user.is_authenticated = (request.form['password'] == users[loginUser]['password'])
-
     return user
 
 #建立一個使用者清單
 users = {'Madi': {'password': '0914'}}
 
+# 設定成global才不換頁就沒資料
+datas = ''
+webName = ''
+# pagination = ''
+boardName = ''
 
-# 一定要有GET
-@app.route('/',methods=['GET','POST'])
+# 首頁
+@app.route('/index', methods=['GET','POST'])
 @login_required #指定該頁面一定要登入才能查看
 def home():
+    global datas, webName, pagination, boardName
+    boardName = queryBoardName(sqlite_path)
     if request.method == 'GET':
-        boardName = queryBoardName(sqlite_path)
-        return render_template('view.html', boardName=boardName)
+        # 第一次登入
+        if datas == '':
+            return render_template('view.html', boardName=boardName)
+        # 已經有datas，代表有post過表單，但換頁的pagination是用GET方式傳送，所以要寫在這
+        else:
+            page_datas, pagination = make_pagination()
+            # page, per_page, offset = get_page_args(page_parameter='page',
+            #                                        per_page_parameter='per_page')
+            # # per_page = 5
+            # print(page, per_page, offset)
+
+            # # 用fetch_data這個函式來抓取分段的資料
+            # page_datas = fetch_data(datas, offset=offset, per_page=per_page)
+            
+            # # 設定分頁
+            # pagination = Pagination(page=page, per_page=per_page, total=len(datas), css_framework='bootstrap4', record_name='review')
+            
+            return render_template('view.html', datas=page_datas, 
+                                                webName=webName, 
+                                                boardName=boardName,
+                                                pagination=pagination)
 
     elif request.method == 'POST':
         webName = request.form.get('webName')
-        boardName = queryBoardName(sqlite_path)
-        datas = queryData(sqlite_path,webName)
+        results = queryData(sqlite_path,webName)
+        datas = results.fetchall()
+
         if datas != 'No Such Table':
-            return render_template('view.html', datas=datas, webName=webName, boardName=boardName)
+            page_datas, pagination = make_pagination()
+            # page, per_page, offset = get_page_args(page_parameter='page',
+            #                                        per_page_parameter='per_page')
+            # # per_page = 5
+            # print(page, per_page, offset)
+            # page_datas = fetch_data(datas, offset=offset, per_page=per_page)
+            # pagination = Pagination(page=page, per_page=per_page, total=len(datas), css_framework='bootstrap4', record_name='review')
+            
+            return render_template('view.html', datas=page_datas, 
+                                                webName=webName, 
+                                                boardName=boardName,
+                                                pagination=pagination)
+        
         # else:
         #     datas = []
         #     return render_template('view.html', datas=datas, webName='No Such Table')
@@ -134,6 +189,10 @@ def logout():
     logout_user()
     flash(f'{loginUser}！歡迎下次再來！')
     return render_template('login.html')
+
+
+
+
 
 
 # 一定要有GET
