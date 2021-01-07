@@ -1,0 +1,57 @@
+{% extends  "base.html" %}
+
+{% block head %}
+<head>
+    <link rel="stylesheet" href="../static/css/ptt_style.css">
+</head>
+{% endblock %}
+
+
+{% block title %}DATA VISUALIZATION{% endblock %}
+
+{% block body %}
+<div>
+    <h1>Data Visualization</h1>
+    <!-- <form action='/index' method="post"> -->
+        <!-- <div class='form-group'> -->
+    <!-- <select name="webName" id="webName" type='submit' class='form-control' required>
+        <option value="">請選擇板名</option>
+        {% for board in boardName:%}
+        <option value={{board}}>{{board}}</option>
+        {% endfor %}
+    </select> -->
+        <!-- </div> -->
+        <!-- <div class="invalid-feedback">Please choose a username.</div> -->
+    <!-- <button type="submit" class='btn btn-dark'>查詢</button> -->
+    <!-- </form> -->
+    <div class="table-responsive">
+        <table class='table table-bordered table-hover text-center'>
+          <th class='thead-dark'>
+            <tr>
+                {% for webName in boardName:%}
+                <td>{{webName}}</td>
+                {% endfor %}
+            </tr>
+          </th>
+          <tbody>
+            {% for i in cnt: %}
+            <td>{{ i }}</td>
+            {% endfor %}
+          </tbody>
+        </table>
+</div>
+
+
+<div id="pieChart"></div>
+<div id="barChart"></div>
+{% endblock %}
+
+
+{% block script %}
+<script>
+    var data = {{cnt}}; 
+    var boardName = {{boardName|tojson}};
+</script>
+<script src='/static/js/pieChart.js'></script>
+<!-- <script src="jquery-3.5.1.min.js"></script> -->
+{% endblock %}

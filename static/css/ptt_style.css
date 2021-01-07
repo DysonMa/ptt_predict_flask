@@ -52,7 +52,11 @@ table {
     text-align: center;
 }
 
-
+/* nav, .page-item.active .page-link{
+    color: black;
+    border-color: black;
+    background-color: black;
+} */
 
 
 /* .table .thead-dark th{
@@ -78,4 +82,25 @@ table {
     padding-left: 2px;
     padding: .1em .25em;
     font-size: 150%;
+}
+
+
+#pieChart {
+    position:relative;
+    top:40%;
+    left:10px;
+    width:400px;
+    height: 400px;
+    display: inline-block;
+    font-size: 12px;
+}
+
+.axis path, .axis line {
+    fill: none;
+    stroke: black;         /*線條顏色*/
+    /* shape-rendering: auto; 讓線很細，比較像座標軸 */
+}
+.axis text {
+    font-size: 12px;
+    fill: black;
 }

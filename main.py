@@ -4,25 +4,39 @@ from flask import request, render_template, url_for, redirect, flash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_paginate import Pagination, get_page_parameter, get_page_args
 
-
-
 # sqlite
 import sqlite3 as DB
 
-#定義資料庫位置
-sqlite_path = 'ptt.db'
+#連接資料庫
+def get_DB():
+    conndb = DB.connect(sqlite_path) # 若有則讀取，沒有則建立
+    curr = conndb.cursor()  
+    return [conndb,curr]
 
-
-def queryData(sqlite_path, webName):
-    [conndb,curr] = get_DB(sqlite_path)
+def queryData(webName):
+    # global sqlite_path
+    [conndb,curr] = get_DB()
     try:
         results = curr.execute("SELECT * FROM {} ORDER BY Date DESC;".format(webName))
     except DB.OperationalError:
         return 'No Such Table'
     return results
 
-def queryBoardName(sqlite_path):
-    [conndb,curr] = get_DB(sqlite_path)
+def queryDataCnt(boardName):
+    # global sqlite_path
+    [conndb,curr] = get_DB()
+    try:
+        cnt = []
+        for webName in boardName:
+            results = curr.execute(f'SELECT count(*) FROM {webName};')
+            cnt.append(results.fetchall()[0][0])
+    except DB.OperationalError:
+        return 'No Such Table'
+    return cnt
+
+def queryBoardName():
+    # global sqlite_path
+    [conndb,curr] = get_DB()
     boardList = []
     try:
         results = curr.execute("SELECT name FROM sqlite_master")
@@ -32,11 +46,6 @@ def queryBoardName(sqlite_path):
         return 'No Tables'
     return boardList
 
-#定義資料庫位置
-def get_DB(DB_path):
-    conndb = DB.connect(DB_path) # 若有則讀取，沒有則建立
-    curr = conndb.cursor()  
-    return [conndb,curr]
 
 #抓取部分資料
 def fetch_data(datas, offset=0, per_page=10):
@@ -58,6 +67,12 @@ def make_pagination():
     pagination = Pagination(page=page, per_page=per_page, total=len(datas), css_framework='bootstrap4', record_name='review')
 
     return page_datas, pagination
+
+
+#定義資料庫位置
+sqlite_path = 'ptt.db'
+[conndb,curr] = get_DB()
+
 
 # 設定密碼
 import os
@@ -118,7 +133,7 @@ boardName = ''
 @login_required #指定該頁面一定要登入才能查看
 def home():
     global datas, webName, pagination, boardName
-    boardName = queryBoardName(sqlite_path)
+    boardName = queryBoardName()
     if request.method == 'GET':
         # 第一次登入
         if datas == '':
@@ -144,7 +159,7 @@ def home():
 
     elif request.method == 'POST':
         webName = request.form.get('webName')
-        results = queryData(sqlite_path,webName)
+        results = queryData(webName)
         datas = results.fetchall()
 
         if datas != 'No Such Table':
@@ -191,8 +206,25 @@ def logout():
     return render_template('login.html')
 
 
+#繪圖
+@app.route('/visualization')
+def plot():
+    boardName = queryBoardName()
+    cnt = queryDataCnt(boardName)
+    print(boardName)
+
+    return render_template('visualization.html', cnt=cnt, boardName=boardName)
 
 
+
+
+
+
+
+
+
+if __name__=="__main__":
+    app.run(debug=True, port="5000")
 
 
 # 一定要有GET
