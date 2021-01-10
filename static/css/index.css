@@ -7,11 +7,19 @@ body{
     background-color: rgba(0,0,0,0.05);
 }
 
+.info{
+    width:50%;
+    padding: 30px;
+}
+
+.wc{
+    padding:0px;
+}
 
 
 .container{
     position: relative;
-    padding:10px;
+    padding:30px 50px;
     height: 100vh;
     width: 100vw;
 }
@@ -26,7 +34,7 @@ body{
 
 .form-group{
     padding: 12px 12px 12px 0;
-    width: 20%;
+    width: 30%;
 }
 
 @media (min-width: 1200px){
@@ -35,14 +43,18 @@ body{
     }
 }
 
+.card{
+    width:95%;
+}
 
-table {
+
+table{
     border: 1px solid black;
     table-layout: fixed;
     background-color: #FCFCFC;
     /* vertical-align:middle; */
     /* text-align: center; */
-    width: 100%;
+    width: 80%;
 }
 
 .table td, .table th{
@@ -70,7 +82,7 @@ table {
 
 .pagination-page-info {
     padding: 1em;
-    padding-left: 0;
+    padding-left: 20px;
     width: 40em;
     margin: .5em;
     margin-left: 0;
@@ -82,6 +94,11 @@ table {
     padding-left: 2px;
     padding: .1em .25em;
     font-size: 150%;
+}
+
+.pagination{
+    padding-left: 20px;
+    padding-bottom: 30px;
 }
 
 
@@ -104,3 +121,18 @@ table {
     font-size: 12px;
     fill: black;
 }
+
+#tooltip{
+    position: absolute;
+    left: 20px; 
+    top:  100px; 
+    background: #fff;
+    width: 150px;
+    height: auto;
+    padding: 0px 10px;
+    border-radius: 5px;
+    box-shadow: 5px 5px 10px rgba(0,0,0,0.3);
+  }
+  #tooltip.hidden{
+    display: none;
+  } 

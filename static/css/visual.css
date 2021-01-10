@@ -1,0 +1,34 @@
+h1{
+    text-align: center;
+    padding: 15px 30px;
+}
+
+body{
+    background-color: rgb(238, 237, 236);
+}
+
+.table-responsive{
+    width:80%;
+    margin:0 auto;
+}
+
+td{
+    background-color: white;
+
+}
+
+div.chart{
+    display: flex;
+    flex-direction: row;
+    margin: 10 100;
+}
+
+#pieChart{
+    width: 50%;
+}
+
+#barChart{
+    width: 50%;
+    padding: 10px;
+    margin: 40 0 0 0;
+}

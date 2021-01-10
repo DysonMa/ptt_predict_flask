@@ -4,6 +4,16 @@ from flask import request, render_template, url_for, redirect, flash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_paginate import Pagination, get_page_parameter, get_page_args
 
+
+from matplotlib import pyplot as plt
+from wordcloud import WordCloud
+# from PIL import Image
+from collections import Counter
+import jieba
+import io
+import urllib, base64
+
+
 # sqlite
 import sqlite3 as DB
 
@@ -68,6 +78,28 @@ def make_pagination():
 
     return page_datas, pagination
 
+# 畫文字雲
+def plt_WordCloud(word_freq):
+    height, width  = 600, 800
+
+    # print(stop_words)
+    # stop_words = ["https", "com", "/", 'imgur', 'jpg','jpghttps','jpghttp']+stop_words
+    wc = WordCloud(font_path="simsun.ttc", 
+                height=height, 
+                width=width
+                ).generate_from_frequencies(dict(word_freq))
+    # plt.figure(figsize=(width/96.,height/96.)) #pixel to inch
+    plt.imshow(wc)
+    plt.axis("off")
+    # wc.to_file("wordcloud.png")
+
+    image = io.BytesIO()
+    plt.tight_layout()
+    plt.savefig(image, format='png')
+    image.seek(0)  # rewind the data
+    string = base64.b64encode(image.read())
+    image_64 = 'data:image/png;base64,' + urllib.parse.quote(string)
+    return image_64
 
 #定義資料庫位置
 sqlite_path = 'ptt.db'
@@ -130,14 +162,14 @@ boardName = ''
 
 # 首頁
 @app.route('/index', methods=['GET','POST'])
-@login_required #指定該頁面一定要登入才能查看
+# @login_required #指定該頁面一定要登入才能查看
 def home():
     global datas, webName, pagination, boardName
     boardName = queryBoardName()
     if request.method == 'GET':
         # 第一次登入
         if datas == '':
-            return render_template('view.html', boardName=boardName)
+            return render_template('index.html', boardName=boardName)
         # 已經有datas，代表有post過表單，但換頁的pagination是用GET方式傳送，所以要寫在這
         else:
             page_datas, pagination = make_pagination()
@@ -152,7 +184,7 @@ def home():
             # # 設定分頁
             # pagination = Pagination(page=page, per_page=per_page, total=len(datas), css_framework='bootstrap4', record_name='review')
             
-            return render_template('view.html', datas=page_datas, 
+            return render_template('index.html', datas=page_datas, 
                                                 webName=webName, 
                                                 boardName=boardName,
                                                 pagination=pagination)
@@ -161,6 +193,22 @@ def home():
         webName = request.form.get('webName')
         results = queryData(webName)
         datas = results.fetchall()
+        review = ','.join([data[5] for data in datas])
+        # review = (review)
+        segments = jieba.cut(review, cut_all=False)
+        stop_words = []
+        with open("./static/stopwords.txt",'r', encoding='utf-8-sig') as f:
+            for line in f.readlines():
+                line = line.strip()
+                stop_words.append(line)
+        segments= [segment for segment in segments if segment not in stop_words]
+        word_freq = Counter(segments)
+        # print(word_freq.most_common(20))
+
+
+        
+        
+        wordcloud = plt_WordCloud(word_freq)
 
         if datas != 'No Such Table':
             page_datas, pagination = make_pagination()
@@ -171,14 +219,15 @@ def home():
             # page_datas = fetch_data(datas, offset=offset, per_page=per_page)
             # pagination = Pagination(page=page, per_page=per_page, total=len(datas), css_framework='bootstrap4', record_name='review')
             
-            return render_template('view.html', datas=page_datas, 
+            return render_template('index.html', datas=page_datas, 
                                                 webName=webName, 
                                                 boardName=boardName,
-                                                pagination=pagination)
+                                                pagination=pagination,
+                                                wordcloud=wordcloud)
         
         # else:
         #     datas = []
-        #     return render_template('view.html', datas=datas, webName='No Such Table')
+        #     return render_template('index.html', datas=datas, webName='No Such Table')
         
 #登入
 @app.route('/login', methods=['GET', 'POST'])
@@ -198,12 +247,12 @@ def login():
     return render_template('login.html')
 
 #登出
-@app.route('/logout')
-def logout():
-    loginUser = current_user.get_id()
-    logout_user()
-    flash(f'{loginUser}！歡迎下次再來！')
-    return render_template('login.html')
+# @app.route('/logout')
+# def logout():
+#     loginUser = current_user.get_id()
+#     logout_user()
+#     flash(f'{loginUser}！歡迎下次再來！')
+#     return render_template('login.html')
 
 
 #繪圖
