@@ -1,6 +1,6 @@
 # flask
 from flask import Flask
-from flask import request, render_template, url_for, redirect, flash
+from flask import request, render_template, url_for, redirect, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_paginate import Pagination, get_page_parameter, get_page_args
 
@@ -12,6 +12,7 @@ from collections import Counter
 import jieba
 import io
 import urllib, base64
+import pandas as pd
 
 
 # sqlite
@@ -162,7 +163,7 @@ boardName = ''
 
 # 首頁
 @app.route('/index', methods=['GET','POST'])
-# @login_required #指定該頁面一定要登入才能查看
+@login_required #指定該頁面一定要登入才能查看
 def home():
     global datas, webName, pagination, boardName
     boardName = queryBoardName()
@@ -240,23 +241,24 @@ def login():
         user = User()
         user.id = loginUser
         login_user(user)
-        flash(f'{loginUser}！歡迎登入！')
+        # flash(f'{loginUser}！歡迎登入！')
         return redirect(url_for('home'))
 
     flash('登入失敗了...')
     return render_template('login.html')
 
 #登出
-# @app.route('/logout')
-# def logout():
-#     loginUser = current_user.get_id()
-#     logout_user()
-#     flash(f'{loginUser}！歡迎下次再來！')
-#     return render_template('login.html')
+@app.route('/logout')
+def logout():
+    loginUser = current_user.get_id()
+    logout_user()
+    flash(f'{loginUser}！歡迎下次再來！')
+    return render_template('login.html')
 
 
 #繪圖
 @app.route('/visualization')
+@login_required #指定該頁面一定要登入才能查看
 def plot():
     boardName = queryBoardName()
     cnt = queryDataCnt(boardName)
@@ -264,8 +266,48 @@ def plot():
 
     return render_template('visualization.html', cnt=cnt, boardName=boardName)
 
+# pie chart資料
+@app.route('/get_piechart_data')
+def get_piechart_data():
+    boardName = queryBoardName()
+    cnt = queryDataCnt(boardName)
+    pieChartData = []
+    for index, item in enumerate(cnt):
+        eachData = {}
+        eachData['category'] = boardName[index]
+        eachData['measure'] =  item
+        pieChartData.append(eachData)
+        print(pieChartData)
+
+    return jsonify(pieChartData)
+
+# bar chart資料
+@app.route('/get_barchart_data')
+def get_barchart_data():
+    boardList = queryBoardName()
+    [conndb,curr] = get_DB()
+    cnt_labels = ['0-99', '100-199', '200-299', '300-399', '400-499', '500-599', '600-699', '700-799', '800-899', '900-999']
+    barChartData = []
+    for each in boardList:
+        df = pd.read_sql(con=conndb, sql=f'select ArticleID,Comment_PushTag from {each}')
+        df['cnt'] = df.Comment_PushTag.str.split('⟴').str.len()
+        df['cnt_group'] = pd.cut(df.cnt, range(0, 1100,100), right=False, labels=cnt_labels)
+        percent = (df.groupby('cnt_group').size().values/df.ArticleID.count())*100
+        for index ,item in enumerate(percent):
+            eachBarChart = {}
+            eachBarChart['group'] = each
+            eachBarChart['category'] = cnt_labels[index]
+            eachBarChart['measure'] = round(item,1)
+            barChartData.append(eachBarChart)
+
+    
+    return jsonify(barChartData)
 
 
+
+@app.route('/test')
+def test():
+    return render_template('test.html')
 
 
 

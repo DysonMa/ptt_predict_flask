@@ -1,228 +1,81 @@
+var formatAsInteger = d3.format(",");
 
-var w = 600
-var h = 400
-var p = 100
-var bar_w = 50
-var bar_p = 15
+function d3PieChart(dataset, datasetBarChart){
 
-// console.log(boardName)
-
-svg();
-bind(data);
-render();
-bind_pie_data(data);
-render_pie(data);
-
-//繪圖區
-function svg() {
-    d3.select("#barChart")
-        .append("svg")
-        .attr({
-            width: w,
-            height: h,
-        })
+    var margin = {top: 30, right: 5, bottom: 20, left: 50};
+    var width = 400 - margin.left - margin.right ,
+        height = 400 - margin.top - margin.bottom,
+        outerRadius = Math.min(width, height) / 2,
+        innerRadius = outerRadius * .999,   
+        innerRadiusFinal = outerRadius * .5,
+        innerRadiusFinal3 = outerRadius* .45,
+        color = d3.scaleOrdinal(d3.schemeCategory10);   
     
-    d3.select("#pieChart")
-        .append("svg")
-        .attr({
-            width: w,
-            height: h,
-        })
-}
+    var vis = d3.select("#pieChart")
+	    .append("svg:svg")  
+	    .data([dataset])    
+	    .attr("width", width)
+	    .attr("height", height)
+	    .append("svg:g")   
+	    .attr("transform", "translate(" + outerRadius + "," + outerRadius + ")"); 
 
-//綁定資料
-function bind(data) {
-    //rect
-    var selection = d3.select("#barChart>svg")
-        .selectAll("rect")
-        .data(data);
+    var arc = d3.arc()    
+        .outerRadius(outerRadius).innerRadius(0);
 
-    selection.enter().append("rect");
-    selection.exit().remove();
+    var arcFinal = d3.arc().innerRadius(innerRadiusFinal).outerRadius(outerRadius);
+    var arcFinal3 = d3.arc().innerRadius(innerRadiusFinal3).outerRadius(outerRadius);   
 
-
-    //text
-    var selection_text = d3.select("#barChart>svg")
-        .selectAll("text")
-        .data(data);
-
-    selection_text.enter().append("text");
-    selection_text.exit().remove();
-}
-
-//渲染
-function render() {
-    //rect
-    d3.selectAll("rect")
-        .transition()
-        .attr({
-            x: (d, i) => {
-                return p + bar_p + (bar_w + bar_p) * i;
-            },
-            y: (d, i) => {
-                return h - p - d;
-            },
-            width: bar_w,
-            height: (d) => {
-                return d
-            },
-            fill: (d)=>{
-                if (d>100){
-                    return "lightgreen";
-                }
-                else{
-                    return "red";
-                }
-            },
-            "id": (d, i)=>{
-                return boardName[i];
-            }
-        })
-      
-
-    //text
-    d3.selectAll("text")
-    // .transition()
-        .attr({
-            x: (d, i) => {
-                return p + bar_p + (bar_w + bar_p) * i + bar_w / 2 - 8;
-            },
-            y: (d, i) => {
-                return h - p - d - 5;
-            },
-            "font-size": 15
-        })
-        .text((d) => {
-            return d
-        })
-
-    // axis
-    var xScale = d3.scale.linear()
-        .domain([0, data.length-1])
-        .rangeRound([0, w-2*p])
-
-    var yScale = d3.scale.linear()
-        .domain([d3.min(data), d3.max(data)])
-        .range([h-p, 0])
-
-    var xAxis = d3.svg.axis()
-        .scale(xScale)
-        .orient("bottom")
-        .ticks(7)
-        .tickFormat((d)=>{
-            return boardName[d];
-        })
+    var pie = d3.pie() 
+        .value(function(d) { return d.measure; }); 
     
-    var yAxis = d3.svg.axis()
-        .scale(yScale)
-        .orient("left")
-        .ticks(7)
-        .tickFormat((d)=>{
-            return d+"個";
-        })
+    var arcs = vis.selectAll("g.slice")
+        .data(pie)                     
+        .enter()                       
+        .append("svg:g")               
+        .attr("class", "slice") 
+        .on("mouseover", mouseover)
+    	.on("mouseout", mouseout)
+    	.on("click", up);
+    				
+    arcs.append("svg:path")
+        .attr("fill", function(d, i) { return color(i); } ) 
+        .attr("d", arc)     
+		.append("svg:title") 
+        .text(function(d) { return d.data.category + ": " + formatAsInteger(d.data.measure)+"%"; });			
 
-    d3.select("#barChart>svg")
-        .append("g")
-        .classed("axis", true)
-        // .transition()
-        .attr("transform", "translate("+(p)+"," + (h - p) + ")")
-        .call(xAxis);
-
-    d3.select("#barChart>svg")
-        .append("g")
-        .classed("axis", true)
-        // .transition()
-        .attr("transform", "translate("+(p)+", 0)")
-        .call(yAxis);
-
-    // bind(boardName)
-    // d3.select("#barChart>svg")
-    //     .append("text")
-    //     .attr({
-    //         // "text-anchor": "middle",
-    //         "font-size": 15,
-    //         x: (d, i)=>{
-    //             return p + bar_p + (bar_w + bar_p) * i + bar_w / 2 - 8;
-    //         },
-    //         y: (d, i)=>{
-    //             return h - p - data[i] - 5;
-    //         }
-    //     })
-    //     .text((d)=>{
-    //         return d;
-    //     })
+    d3.selectAll("g.slice").selectAll("path").transition()
+		.duration(750)
+		.delay(10)
+        .attr("d", arcFinal );
     
-}
-
-function bind_pie_data(data){
-    // 圓餅圖
-    var pie = d3.layout.pie().value((d)=>{
-        return d
-    })
-
-    var selection = d3.select("#pieChart>svg")
-                        .selectAll("g.arc")
-                        .data(pie(data));
-
-    var g_arc = selection.enter().append("g").attr("class","arc");
-    g_arc.append("path");
-    g_arc.append("text");
-    selection.exit().remove();
-}
-
-function render_pie(data){
-    var outerR = 170;
-    var innerR = 80;
-    var arc = d3.svg.arc()
-                .outerRadius(outerR)
-                .innerRadius(innerR); 
-
-    var fScale = d3.scale.category20();
-
-    d3.selectAll("g.arc")
-        // .transition()
-        .attr("transform", "translate("+w/2+","+h/2+")")
-        .select("path")
-        .attr("d", arc)
-        .style("fill", function(d,i) { return fScale(i); });
     
-    d3.selectAll("g.arc")
-        .select("text")
-        .transition()
-        .attr("transform", function(d) { return "translate(" + arc.centroid(d) + ")"; })  //arc.centroid 計算並回傳此元素中心位置(重心)
-        .attr({
-            "text-anchor":"middle",
-            // dy: 20,   //y的移動距離
-            // dx: 20    //x的移動距離
-        })
-        .text(function(d, i){
-            return boardName[i];    
-        })
+    arcs.filter(function(d) { return d.endAngle - d.startAngle > .2; })
+    .append("svg:text")
+    .attr("dy", ".35em")
+    .attr("text-anchor", "middle")
+    .attr("transform", function(d) { return "translate(" + arcFinal.centroid(d) + ")"; })
+    .text(function(d) { return d.data.category; });
 
-    // d3.selectAll('#pieChart g.arc path').on("mouseover", (d, i)=>{
-    //     var posX = arc.centroid(d)[0]
-    //     console.log(posX)
-    //     var posY = arc.centroid(d)[1]
-    //     console.log(posY)
+    vis.append("svg:text")
+        .attr("dy", ".35em")
+        .attr("text-anchor", "middle")
+        .text("Article numbers")
+        .attr("class","title");		    
 
-    //     var tooltip = d3.select("#tooltip")
-    //                     .style({
-    //                         "left": (+posX)+"px",
-    //                         "top": (+posY)+"px"
-    //                     })
+    function mouseover() {
+        d3.select(this).select("path").transition()
+        .duration(750)
+        .attr("d", arcFinal3);
+    }
 
-    //     tooltip.html(boardName[i]+"<br>"+d);
-    //     tooltip.classed("hidden", false);
+    function mouseout() {
+        d3.select(this).select("path").transition()
+        .duration(750)
+        .attr("d", arcFinal);
+    }
 
-    //     // d3.select(this).attr({
-    //     //     "stroke-width": 5
-    //     // });
-    // })
-    // .on("mouseout", (d)=>{
-    //     d3.select("#tooltip").classed("hidden", true);
-    //     // d3.select(this).attr({
-    //     //     "stroke-width": 1
-    //     // })
-    // })
+    function up(d, i) {
+        updateBarChart(d.data.category, color(i), datasetBarChart);
+     }
 }
 
